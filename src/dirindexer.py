@@ -14,7 +14,7 @@ import multiprocessing
 import threading
 import colorama
 import time
-import Queue
+import queue
 
 
 class DirIndexer:
@@ -144,7 +144,7 @@ class DirIndexer:
             Number of files that have been added to the index
         """
         x = 0
-        print dir_nm
+        print(dir_nm)
         for root, sub_folders, files in os.walk(dir_nm, followlinks=True):
             #Remove hidden files
             if not self.all:
@@ -163,7 +163,7 @@ class DirIndexer:
                          in self.include]
 
             for cur_file in files:
-                path = unicode(os.path.join(root, cur_file))
+                path = str(os.path.join(root, cur_file))
 
                 #If a file is in the queue or is new, add it
                 if checknew and path in to_index or path not in indexed_paths:
@@ -185,12 +185,12 @@ class DirIndexer:
         procs = self.get_cores()
 
         writer = ix.writer(procs=procs)
-        dir_nm = unicode(self.directory)
+        dir_nm = str(self.directory)
 
         #recursively scan the directory and add files
         x = self.scan_directory(dir_nm, writer)
 
-        print "Writing %d files to index" % x
+        print("Writing %d files to index" % x)
         writer.commit()
         ix.close()
 
@@ -233,7 +233,7 @@ class DirIndexer:
                                         True, to_index, indexed_paths)
 
         finally:
-            print "Writing " + str(x) + " files to index."
+            print("Writing " + str(x) + " files to index.")
             writer.commit()
             ix.close()
 
@@ -267,17 +267,17 @@ class DirIndexer:
 
         cur_file = codecs.open(path, encoding='utf-8', errors='ignore')
         content = cur_file.read()
-        file_name = unicode(cur_file.name)
-        path = unicode(path)
+        file_name = str(cur_file.name)
+        path = str(path)
         modtime = os.path.getmtime(path)
-        print "Indexing %s" % file_name
+        print("Indexing %s" % file_name)
         writer.add_document(title=file_name, path=path,
                             content=content, date=modtime)
 
     def remove_doc(self, writer, path):
         """Removes a given file from index_writer"""
 
-        print "Removing %s" % path
+        print("Removing %s" % path)
         writer.delete_by_term('path', path)
 
     def search(self):
@@ -288,12 +288,12 @@ class DirIndexer:
 
         try:
             ix = self.get_ix()
-            search_term = unicode(self.keyword)
+            search_term = str(self.keyword)
 
             from whoosh.qparser import QueryParser
             with ix.searcher() as searcher:
                 query = QueryParser("content", ix.schema).parse(
-                    u"%s" % search_term)
+                    "%s" % search_term)
                 results = searcher.search(query, terms=True, limit=self.limit)
                 results.fragmenter = highlight.ContextFragmenter(maxchars=200,
                                                                  surround=20)
@@ -315,33 +315,33 @@ class DirIndexer:
                                if os.path.splitext(f["path"])[1][1:]
                                in self.include]
 
-                print results
+                print(results)
                 for i, result in enumerate(results, start=1):
                     if color:
-                        print "Result %i: %s" % (
+                        print("Result %i: %s" % (
                             i, colorama.Fore.GREEN + result["path"]
-                            + colorama.Fore.RESET)
+                            + colorama.Fore.RESET))
                     else:
-                        print "Result %i: %s" % (i, result["path"])
+                        print("Result %i: %s" % (i, result["path"]))
                     with codecs.open(result["path"],
                                      encoding='utf-8',
                                      errors='ignore') as f:
                         file_content = f.read()
-                        print result.highlights("content",
+                        print(result.highlights("content",
                                                 text=file_content,
-                                                top=10)
-                        print "\n"
+                                                top=10))
+                        print("\n")
         finally:
             ix.close()
 
     def clear(self):
         """Deletes all indexes"""
 
-        print "Deleting the current index..."
+        print("Deleting the current index...")
         for root, dirs, files in os.walk(os.getcwd() + "/.indexdir/",
                                          topdown=False):
             for name in files:
-                print name
+                print(name)
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
@@ -376,7 +376,7 @@ class IndexWriterEventHandler(FileSystemEventHandler):
         self.exclude = exclude
         self.include = include
         self.delay = delay
-        self.queue = Queue.LifoQueue()
+        self.queue = queue.LifoQueue()
         self.clear_queue()
 
     def dispatch(self, event):
@@ -400,7 +400,7 @@ class IndexWriterEventHandler(FileSystemEventHandler):
                     FileSystemEventHandler.dispatch(self, event)
 
         if urls != []:
-            print("Commiting %i changes." % len(urls))
+            print(("Commiting %i changes." % len(urls)))
             self.writer.commit()
             print("Done.")
 
